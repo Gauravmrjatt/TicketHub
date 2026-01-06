@@ -1,302 +1,308 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Ticket, ArrowRight, Search, CheckCircle, User, CreditCard, FileCheck, Menu, X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    Ticket,
+    Plus,
+    Search,
+    Calendar,
+    MapPin,
+    Users,
+    ArrowRight,
+    Loader2,
+    LogIn,
+    LogOut,
+    User
+} from "lucide-react";
 
 export default function HomePage() {
-    const router = useRouter();
+    const [events, setEvents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
     const [ticketId, setTicketId] = useState("");
-    const [isTracking, setIsTracking] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [user, setUser] = useState(null);
 
-    const handleTrack = (e) => {
-        e.preventDefault();
-        if (ticketId.trim()) {
-            setIsTracking(true);
-            router.push(`/track/${ticketId.trim()}`);
+    useEffect(() => {
+        // Check if user is logged in
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+        fetchEvents();
+    }, []);
+
+    const fetchEvents = async () => {
+        try {
+            const res = await fetch("/api/events");
+            const data = await res.json();
+            if (data.success) {
+                setEvents(data.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch events:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem("user");
+        setUser(null);
+    };
+
+    const filteredEvents = events.filter((event) => {
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+            event.name.toLowerCase().includes(query) ||
+            event.venue?.toLowerCase().includes(query) ||
+            event.eventId.toLowerCase().includes(query)
+        );
+    });
+
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
+
     return (
-        <div className="min-h-screen bg-white overflow-x-hidden">
-            {/* Subtle grain texture */}
+        <div className="min-h-screen bg-white">
             <div className="fixed inset-0 opacity-[0.015] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNhKSIvPjwvc3ZnPg==')]"></div>
 
             {/* Header */}
-            <header className="relative z-50 border-b border-slate-200">
-                <div className="container mx-auto px-4 py-6">
+            <header className="border-b border-slate-200 relative z-10">
+                <div className="container mx-auto px-4 py-4 sm:py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center">
-                                <Ticket className="w-4 h-4 text-white" />
+                            <div className="w-10 h-10 border border-slate-900 flex items-center justify-center">
+                                <Ticket className="w-5 h-5 text-slate-900" />
                             </div>
-                            <span className="text-xl font-medium text-slate-900 tracking-tight">TicketHub</span>
+                            <span className="text-xl font-light text-slate-900">TicketHub</span>
                         </div>
-
-                        {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center gap-8">
-                            <Link href="/book" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">
-                                Book Ticket
-                            </Link>
-                            <Link href="/admin" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">
-                                Admin
-                            </Link>
-                        </nav>
-
-                        {/* Mobile Menu Button */}
-                        <button
-                            className="md:hidden text-slate-900 p-2"
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        >
-                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            {user ? (
+                                <>
+                                    <span className="hidden sm:flex items-center gap-2 text-slate-600 text-sm font-light">
+                                        <User className="w-4 h-4" />
+                                        {user.name}
+                                    </span>
+                                    <Link href="/create-event">
+                                        <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white border-0 rounded-none h-10 px-4">
+                                            <Plus className="w-4 h-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Create Event</span>
+                                        </Button>
+                                    </Link>
+                                    <Button size="sm" variant="ghost" onClick={handleLogout} className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-none h-10">
+                                        <LogOut className="w-4 h-4" />
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/login">
+                                        <Button size="sm" variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-none h-10">
+                                            <LogIn className="w-4 h-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Login</span>
+                                        </Button>
+                                    </Link>
+                                    <Link href="/signup">
+                                        <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white border-0 rounded-none h-10 px-4">
+                                            Sign Up
+                                        </Button>
+                                    </Link>
+                                </>
+                            )}
+                        </div>
                     </div>
-
-                    {/* Mobile Menu */}
-                    {mobileMenuOpen && (
-                        <nav className="md:hidden mt-6 pb-6 border-t border-slate-200 pt-6">
-                            <div className="flex flex-col gap-4">
-                                <Link href="/book" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">Book Ticket</Link>
-                                <Link href="/admin" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">Admin</Link>
-                            </div>
-                        </nav>
-                    )}
                 </div>
             </header>
 
             {/* Hero Section */}
-            <section className="relative z-10 container mx-auto px-4 py-20 sm:py-28 md:py-32 lg:py-40">
-                <div className="max-w-4xl mx-auto">
-                    {/* Main Content */}
-                    <div className="text-center space-y-8 mb-16">
-                        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light text-slate-900 leading-[1.1] tracking-tight">
-                            Book tickets.
-                            <br />
-                            <span className="font-normal">Track instantly.</span>
-                        </h1>
+            <section className="container mx-auto px-4 py-16 sm:py-20 md:py-24 relative z-10">
+                <div className="text-center max-w-3xl mx-auto">
+                    <p className="text-slate-500 text-sm uppercase tracking-widest mb-6 font-light">
+                        Secure & Professional Ticket Booking
+                    </p>
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-slate-900 leading-tight mb-6">
+                        Book Tickets for
+                        <span className="block font-normal">Amazing Events</span>
+                    </h1>
+                    <p className="text-slate-600 text-lg mb-10 max-w-xl mx-auto font-light">
+                        Create your own event or browse upcoming events. Secure booking with easy ticket tracking.
+                    </p>
 
-                        <p className="text-slate-600 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                            Simple three-step booking with instant confirmation.
-                            <br className="hidden sm:block" />
-                            No waiting. No complexity.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                            <Link href="/book">
-                                <Button className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 py-6 text-base rounded-none transition-all duration-200">
-                                    Start Booking
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                    {/* Search & Track */}
+                    <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Input
+                                type="text"
+                                placeholder="Search events..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-12 h-12 border-slate-300 focus:border-slate-900 rounded-none"
+                            />
+                        </div>
+                        <div className="relative flex-1 sm:max-w-[200px]">
+                            <Input
+                                type="text"
+                                placeholder="Track ticket ID"
+                                value={ticketId}
+                                onChange={(e) => setTicketId(e.target.value)}
+                                className="h-12 border-slate-300 focus:border-slate-900 rounded-none"
+                            />
+                        </div>
+                        {ticketId && (
+                            <Link href={`/track/${ticketId}`}>
+                                <Button className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white rounded-none">
+                                    Track
                                 </Button>
                             </Link>
-                        </div>
-                    </div>
-
-                    {/* Track Input */}
-                    <div className="max-w-xl mx-auto pt-12 border-t border-slate-200">
-                        <p className="text-slate-500 text-sm mb-4 text-center font-light">Track your booking</p>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="relative flex-1">
-                                <Input
-                                    type="text"
-                                    placeholder="Enter ticket ID"
-                                    value={ticketId}
-                                    onChange={(e) => setTicketId(e.target.value)}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && ticketId.trim()) {
-                                            handleTrack(e);
-                                        }
-                                    }}
-                                    className="h-12 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-slate-900 rounded-none transition-colors"
-                                />
-                            </div>
-                            <Button
-                                onClick={handleTrack}
-                                disabled={!ticketId.trim() || isTracking}
-                                variant="outline"
-                                className="h-12 px-6 border-slate-300 text-slate-900 hover:bg-slate-50 rounded-none transition-colors disabled:opacity-40"
-                            >
-                                <Search className="h-4 w-4 mr-2" />
-                                Track
-                            </Button>
-                        </div>
+                        )}
                     </div>
                 </div>
             </section>
 
-            {/* How it Works */}
-            <section className="relative z-10 bg-slate-50 border-y border-slate-200">
-                <div className="container mx-auto px-4 py-20 sm:py-28">
-                    <div className="max-w-3xl mx-auto">
-                        <h2 className="text-3xl sm:text-4xl font-light text-slate-900 mb-16 text-center">
-                            How it works
+            {/* Events Section */}
+            <section className="container mx-auto px-4 pb-20 relative z-10">
+                <div className="flex items-center justify-between mb-8 border-b border-slate-200 pb-6">
+                    <div>
+                        <h2 className="text-2xl font-light text-slate-900">
+                            Upcoming Events
                         </h2>
-
-                        <div className="space-y-12">
-                            {/* Step 1 */}
-                            <div className="flex gap-8 items-start group">
-                                <div className="flex-shrink-0">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <User className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <div className="pt-2">
-                                    <h3 className="text-xl font-normal text-slate-900 mb-2">Enter your details</h3>
-                                    <p className="text-slate-600 leading-relaxed font-light">
-                                        Provide your basic information and journey details through our streamlined form.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="flex gap-8 items-start group">
-                                <div className="flex-shrink-0">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <CreditCard className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <div className="pt-2">
-                                    <h3 className="text-xl font-normal text-slate-900 mb-2">Complete payment</h3>
-                                    <p className="text-slate-600 leading-relaxed font-light">
-                                        Secure payment via UPI with instant processing and confirmation.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="flex gap-8 items-start group">
-                                <div className="flex-shrink-0">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <FileCheck className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <div className="pt-2">
-                                    <h3 className="text-xl font-normal text-slate-900 mb-2">Receive your ticket</h3>
-                                    <p className="text-slate-600 leading-relaxed font-light">
-                                        Instant confirmation with downloadable ticket and tracking ID.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        {filteredEvents.length > 0 && (
+                            <p className="text-slate-500 text-sm font-light mt-1">{filteredEvents.length} events available</p>
+                        )}
                     </div>
+                    {user && (
+                        <Link href="/create-event">
+                            <Button variant="outline" className="border-slate-300 text-slate-900 hover:bg-slate-50 rounded-none h-10">
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Event
+                            </Button>
+                        </Link>
+                    )}
                 </div>
-            </section>
 
-            {/* Features */}
-            <section className="relative z-10 bg-white">
-                <div className="container mx-auto px-4 py-20 sm:py-28">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="grid md:grid-cols-3 gap-12 md:gap-16">
-                            {/* Feature 1 */}
-                            <div className="text-center group">
-                                <div className="mb-6 flex justify-center">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <Ticket className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <h3 className="text-lg font-normal text-slate-900 mb-3">Fast booking</h3>
-                                <p className="text-slate-600 text-sm leading-relaxed font-light">
-                                    Complete your booking in under two minutes with our streamlined process.
-                                </p>
-                            </div>
-
-                            {/* Feature 2 */}
-                            <div className="text-center group">
-                                <div className="mb-6 flex justify-center">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <Search className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <h3 className="text-lg font-normal text-slate-900 mb-3">Live tracking</h3>
-                                <p className="text-slate-600 text-sm leading-relaxed font-light">
-                                    Monitor your booking status in real-time with your unique ticket ID.
-                                </p>
-                            </div>
-
-                            {/* Feature 3 */}
-                            <div className="text-center group">
-                                <div className="mb-6 flex justify-center">
-                                    <div className="w-12 h-12 border border-slate-300 flex items-center justify-center transition-all duration-300 group-hover:border-slate-900">
-                                        <CheckCircle className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                                    </div>
-                                </div>
-                                <h3 className="text-lg font-normal text-slate-900 mb-3">Quick approval</h3>
-                                <p className="text-slate-600 text-sm leading-relaxed font-light">
-                                    Swift verification and approval process to get you ready fast.
-                                </p>
-                            </div>
-                        </div>
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="h-8 w-8 animate-spin text-slate-900" />
                     </div>
-                </div>
-            </section>
-
-            {/* Stats */}
-            <section className="relative z-10 bg-slate-50 border-y border-slate-200">
-                <div className="container mx-auto px-4 py-16">
-                    <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">10K+</div>
-                            <div className="text-slate-600 text-xs tracking-wide uppercase font-light">Users</div>
+                ) : filteredEvents.length === 0 ? (
+                    <div className="text-center py-20">
+                        <div className="w-20 h-20 mx-auto mb-6 border border-slate-300 flex items-center justify-center">
+                            <Calendar className="w-10 h-10 text-slate-400" />
                         </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">2min</div>
-                            <div className="text-slate-600 text-xs tracking-wide uppercase font-light">Avg time</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">99.9%</div>
-                            <div className="text-slate-600 text-xs tracking-wide uppercase font-light">Success</div>
-                        </div>
-                        <div className="text-center col-span-2 md:col-span-1">
-                            <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">24/7</div>
-                            <div className="text-slate-600 text-xs tracking-wide uppercase font-light">Support</div>
-                        </div>
+                        <h3 className="text-xl font-light text-slate-900 mb-2">No Events Found</h3>
+                        <p className="text-slate-600 mb-8 font-light">
+                            {searchQuery ? "Try a different search term" : "Be the first to create an event!"}
+                        </p>
+                        {user ? (
+                            <Link href="/create-event">
+                                <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-none h-12 px-8">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create Event
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href="/signup">
+                                <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-none h-12 px-8">
+                                    Sign Up to Create
+                                </Button>
+                            </Link>
+                        )}
                     </div>
-                </div>
-            </section>
+                ) : (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredEvents.map((event) => (
+                            <Link key={event.eventId} href={`/events/${event.eventId}`}>
+                                <Card className="group border-slate-200 hover:border-slate-900 transition-all duration-300 overflow-hidden cursor-pointer h-full rounded-none shadow-none">
+                                    {/* Event Image */}
+                                    <div className="aspect-video bg-slate-100 relative overflow-hidden">
+                                        {event.image ? (
+                                            <img
+                                                src={event.image}
+                                                alt={event.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Ticket className="w-12 h-12 text-slate-300" />
+                                            </div>
+                                        )}
+                                        {event.price > 0 && (
+                                            <Badge variant="outline" className="absolute top-3 right-3 bg-white border-slate-900 text-slate-900 rounded-none">
+                                                ₹{event.price}
+                                            </Badge>
+                                        )}
+                                        {event.price === 0 && (
+                                            <Badge variant="outline" className="absolute top-3 right-3 bg-white border-green-600 text-green-600 rounded-none">
+                                                Free
+                                            </Badge>
+                                        )}
+                                    </div>
 
-            {/* Trust Badges */}
-            <section className="relative z-10 bg-white border-b border-slate-200">
-                <div className="container mx-auto px-4 py-12">
-                    <p className="text-center text-slate-400 text-xs tracking-wide uppercase mb-8 font-light">Trusted worldwide</p>
-                    <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
-                        <div className="text-slate-600 text-sm tracking-wider uppercase font-light hover:text-slate-900 transition-colors cursor-pointer">Secure</div>
-                        <div className="text-slate-600 text-sm tracking-wider uppercase font-light hover:text-slate-900 transition-colors cursor-pointer">UPI Payment</div>
-                        <div className="text-slate-600 text-sm tracking-wider uppercase font-light hover:text-slate-900 transition-colors cursor-pointer">Verified</div>
-                        <div className="text-slate-600 text-sm tracking-wider uppercase font-light hover:text-slate-900 transition-colors cursor-pointer">Instant</div>
+                                    <CardContent className="p-5">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h3 className="font-normal text-slate-900 text-lg line-clamp-1 group-hover:text-slate-600 transition-colors">
+                                                    {event.name}
+                                                </h3>
+                                                <p className="text-xs text-slate-400 font-mono mt-1">{event.eventId}</p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3 text-slate-600 text-sm font-light">
+                                                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                                                    <span className="truncate">{formatDate(event.date)}</span>
+                                                </div>
+                                                {event.venue && (
+                                                    <div className="flex items-center gap-3 text-slate-600 text-sm font-light">
+                                                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                        <span className="truncate">{event.venue}</span>
+                                                    </div>
+                                                )}
+                                                {event.capacity > 0 && (
+                                                    <div className="flex items-center gap-3 text-slate-600 text-sm font-light">
+                                                        <Users className="w-4 h-4 flex-shrink-0" />
+                                                        <span>{event.ticketsSold || 0}/{event.capacity} spots</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <Button variant="outline" className="w-full mt-2 border-slate-300 text-slate-900 hover:bg-slate-900 hover:text-white rounded-none h-10 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                                View Event
+                                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))}
                     </div>
-                </div>
+                )}
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 bg-slate-50">
-                <div className="container mx-auto px-4 py-16">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex flex-col items-center text-center mb-12">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center">
-                                    <Ticket className="w-4 h-4 text-white" />
-                                </div>
-                                <span className="text-xl font-medium text-slate-900 tracking-tight">TicketHub</span>
-                            </div>
-                            <p className="text-slate-600 text-sm mb-8 font-light max-w-md">
-                                Simple, fast, and reliable ticket booking for everyone.
-                            </p>
-                            <div className="flex items-center gap-8 text-sm">
-                                <Link href="/book" className="text-slate-600 hover:text-slate-900 transition-colors font-light">Book</Link>
-                                <Link href="/admin" className="text-slate-600 hover:text-slate-900 transition-colors font-light">Admin</Link>
-                                <Link href="#" className="text-slate-600 hover:text-slate-900 transition-colors font-light">Privacy</Link>
-                                <Link href="#" className="text-slate-600 hover:text-slate-900 transition-colors font-light">Terms</Link>
-                            </div>
+            <footer className="border-t border-slate-200 py-8 relative z-10">
+                <div className="container mx-auto px-4 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className="w-8 h-8 border border-slate-900 flex items-center justify-center">
+                            <Ticket className="w-4 h-4 text-slate-900" />
                         </div>
-                        <div className="pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-xs font-light">
-                                © {new Date().getFullYear()} TicketHub. All rights reserved.
-                            </p>
-                        </div>
+                        <span className="font-light text-slate-900">TicketHub</span>
                     </div>
+                    <p className="text-slate-500 text-sm font-light">
+                        © {new Date().getFullYear()} TicketHub. Secure ticket booking platform.
+                    </p>
                 </div>
             </footer>
         </div>

@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Ticket from "@/models/Ticket";
+import Event from "@/models/Event";
 
-/**
- * GET /api/tickets/[ticketId]
- * Get a single ticket by ticketId
- */
+// GET - Get ticket by ID with event details
 export async function GET(request, { params }) {
     try {
         await dbConnect();
 
         const { ticketId } = await params;
 
-        const ticket = await Ticket.findOne({ ticketId });
+        const ticket = await Ticket.findOne({ ticketId: ticketId.toUpperCase() }).lean();
 
         if (!ticket) {
             return NextResponse.json(
@@ -21,9 +19,17 @@ export async function GET(request, { params }) {
             );
         }
 
+        // Get event details
+        const event = await Event.findOne({ eventId: ticket.eventId })
+            .select("name date venue eventId")
+            .lean();
+
         return NextResponse.json({
             success: true,
-            data: ticket,
+            data: {
+                ...ticket,
+                event,
+            },
         });
     } catch (error) {
         console.error("Error fetching ticket:", error);
