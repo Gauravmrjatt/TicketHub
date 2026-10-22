@@ -1,25 +1,24 @@
 # TicketHub
 
-Event ticketing platform: create events, book seats, and issue tickets through an admin approval workflow.
+Event ticketing. Someone opens an event, picks a seat, and the request lands in an admin queue where it gets approved or rejected.
 
-**Live demo** → https://ticket-hub-ten.vercel.app
+**Live:** https://ticket-hub-ten.vercel.app
+
+## What it does
+
+- Public event pages and a per event booking flow
+- Event scoped login, so an attendee does not need a global account
+- Every ticket request waits for an admin decision
+- Admin dashboard with login, stats and per event settings
+- Brand colour driven by one environment variable
+
+About 5,500 lines across 45 files: 16 endpoints, 5 Mongoose models, 7 components.
 
 ## Stack
 
-- **Next.js 15** (App Router) + **React 19**
-- **MongoDB** via Mongoose
-- **Tailwind CSS** + **shadcn/ui** (Radix primitives)
-- `bcryptjs` for password hashing, `uuid` for ticket IDs
+Next.js 15 (App Router), React 19, MongoDB via Mongoose, Tailwind CSS, shadcn/ui on Radix primitives, bcryptjs for hashing, uuid for ticket IDs.
 
-## Features
-
-- Public event listing and per-event booking flow
-- Event-scoped login so attendees don't need a global account
-- Ticket requests routed to an admin queue for **approve / reject**
-- Admin dashboard with login, stats, and event settings
-- Brand colour configurable through an environment variable
-
-## Getting started
+## Run it
 
 ```bash
 npm install
@@ -37,43 +36,43 @@ NEXT_PUBLIC_BRAND_COLOR=#0f172a
 npm run dev     # http://localhost:3000
 ```
 
-## Environment variables
+## Environment
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `MONGODB_URI` | yes | MongoDB connection string |
+| `MONGODB_URI` | yes | Mongo connection string |
 | `ADMIN_PASSWORD` | yes | Admin dashboard password |
 | `NEXT_PUBLIC_BRAND_COLOR` | no | UI accent colour |
 
 ## Scripts
 
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Start the dev server |
+| `npm run dev` | Dev server |
 | `npm run build` | Production build |
-| `npm start` | Serve the production build |
-| `npm run lint` | Run ESLint |
+| `npm start` | Serve the build |
+| `npm run lint` | ESLint |
 
-## API routes
+## Endpoints
 
-**Auth** — `POST /api/auth/signup`, `POST /api/auth/login`
-**Admin** — `POST /api/admin/login`, `POST /api/admin/register`, `GET /api/admin/stats`
-**Events** — `GET|POST /api/events`, `GET|PATCH /api/events/[eventId]`, `POST /api/events/[eventId]/login`
-**Tickets** — `GET|POST /api/events/[eventId]/tickets`, `GET|PATCH /api/tickets/[ticketId]`, `POST /api/tickets/[ticketId]/approve`, `POST /api/tickets/[ticketId]/reject`
-**Settings** — `GET|PATCH /api/settings`
+**Auth:** `POST /api/auth/signup`, `POST /api/auth/login`
+**Admin:** `POST /api/admin/login`, `POST /api/admin/register`, `GET /api/admin/stats`
+**Events:** `GET|POST /api/events`, `GET|PATCH /api/events/[eventId]`, `POST /api/events/[eventId]/login`
+**Tickets:** `GET|POST /api/events/[eventId]/tickets`, `GET|PATCH /api/tickets/[ticketId]`, `POST /api/tickets/[ticketId]/approve`, `POST /api/tickets/[ticketId]/reject`
+**Settings:** `GET|PATCH /api/settings`
 
-## Structure
+## Layout
 
 ```
-app/            routes (pages + API handlers)
+app/            pages and route handlers
   admin/        admin dashboard
-  api/          route handlers
+  api/          API handlers
   book/         booking flow
 components/     shared UI
 lib/            helpers
 models/         Mongoose schemas
 ```
 
----
+## Known issue
 
-> **Security note:** `.env.local` is currently tracked in this repository. Treat the MongoDB credentials and admin password it contains as compromised — rotate them, then remove the file from tracking and add it to `.gitignore`.
+`.env.local` is tracked in this repo. The Mongo credentials and admin password in it should be treated as leaked. Rotate both, then untrack the file and add it to `.gitignore`.
